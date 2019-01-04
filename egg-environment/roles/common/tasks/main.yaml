@@ -17,6 +17,16 @@
       - patchelf
     state: latest
 
+- name: Install/Update supervisor
+  yum:
+    name:
+      - supervisor
+    state: latest
+
+- name: Update supervisor configure
+  shell: sed -i -r -e "s/^files[[:space:]]*=[[:space:]]*[A-Za-z0-9\.\/\*]+/files = \/{{activity_root_path}}\/conf\/supervisor\/conf.d\/*.conf/g" /etc/supervisord.conf
+  # 这个sed必须是gnu-sed
+
 - name: Test user egg
   command: "id {{ activity_user }}"
   register: user_activity_exists
@@ -53,7 +63,3 @@
     owner: "{{ activity_user }}"
     group: "{{ activity_user }}"
     mode: "0644"
-
-- name: Test profile
-  shell: echo 'export STATE=okokla' > /{{ activity_root_path }}/conf/profile.d/helloworld.sh && chown {{ activity_user }}:{{ activity_user }} /{{ activity_root_path }}/conf/profile.d/helloworld.sh
-  when: user_activity_exists is failed

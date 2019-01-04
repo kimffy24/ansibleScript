@@ -1,0 +1,59 @@
+---
+# This playbook contains common plays that will be run on all nodes.
+
+- name: Preprare build environment
+  yum:
+    name: "@Development tools"
+    state: present
+
+- name: Install/Update vim/rsync/wget/mlocate/tree/patchelf
+  yum:
+    name:
+      - vim
+      - rsync
+      - wget
+      - mlocate
+      - tree
+      - patchelf
+    state: latest
+
+- name: Test user egg
+  command: "id {{ activity_user }}"
+  register: user_activity_exists
+  ignore_errors: True
+
+- name: Add user {{ activity_user }}
+  user:
+    name: "{{ activity_user }}"
+    home: "/home/{{ activity_user }}"
+  when: user_activity_exists is failed
+  with_items:
+    - "{{ activity_user }}"
+
+- name: Make ssh authorized s1
+  file: path=/home/{{ activity_user }}/.ssh owner={{ activity_user }} group={{ activity_user }} state=directory mode=0700
+  when: user_activity_exists is failed
+
+- name: Make ssh authorized s2
+  copy: src=authorized_keys dest=/home/{{ activity_user }}/.ssh/authorized_keys owner={{ activity_user }} group={{ activity_user }} mode=0600
+  when: user_activity_exists is failed
+
+- name: Initial {{ activity_user }} shell environment
+  shell: echo ". /{{ activity_root_path }}/conf/profile" >> /home/{{ activity_user }}/.bashrc
+  when: user_activity_exists is failed
+
+- name: Copy skeleton of /{{ activity_root_path }}
+  copy: src=skeleton/ dest=/{{ activity_root_path }} owner={{ activity_user }} group={{ activity_user }} mode=0644
+  when: user_activity_exists is failed
+
+- name: Enable skeleton profile of {{ activity_root_path }}
+  template:
+    src: "conf_profile.tpl"
+    dest: "/{{ activity_root_path }}/conf/profile"
+    owner: "{{ activity_user }}"
+    group: "{{ activity_user }}"
+    mode: "0644"
+
+- name: Test profile
+  shell: echo 'export STATE=okokla' > /{{ activity_root_path }}/conf/profile.d/helloworld.sh && chown {{ activity_user }}:{{ activity_user }} /{{ activity_root_path }}/conf/profile.d/helloworld.sh
+  when: user_activity_exists is failed

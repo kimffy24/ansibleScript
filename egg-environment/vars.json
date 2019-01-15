@@ -1,4 +1,5 @@
 {
+    "hosts": "zhanliwei",
     "activity_user": "egg",
-    "activity_root_path": "cook"
+    "activity_root_path": "server"
 }

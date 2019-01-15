@@ -1,6 +1,10 @@
 ---
 # This playbook contains common plays that will be run on all nodes.
 
+- name: System checkout (we only service for RHEL family)
+  shell: /usr/bin/false
+  when: ansible_os_family != "RedHat"
+
 - name: Preprare build environment
   yum:
     name: "@Development tools"
@@ -27,7 +31,13 @@
   shell: sed -i -r -e "s/^files[[:space:]]*=[[:space:]]*[A-Za-z0-9\.\/\*]+/files = \/{{activity_root_path}}\/conf\/supervisor\/conf.d\/*.conf/g" /etc/supervisord.conf
   # 这个sed必须是gnu-sed
 
-- name: Test user egg
+- name: Enable and start supervisor
+  service:
+    name: "supervisord"
+    enabled: "yes"
+    state: "restarted"
+
+- name: Ensure user egg is not exist
   command: "id {{ activity_user }}"
   register: user_activity_exists
   ignore_errors: True
@@ -60,6 +70,7 @@
   template:
     src: "conf_profile.tpl"
     dest: "/{{ activity_root_path }}/conf/profile"
-    owner: "{{ activity_user }}"
-    group: "{{ activity_user }}"
+    owner: "root"
+    group: "root"
     mode: "0644"
+  when: user_activity_exists is failed

@@ -1,7 +1,7 @@
 ---
 # This playbook contains common plays that will be run on all nodes.
 
-- name: System checkout (we only service for RHEL family)
+- name: System check (we only service for RHEL family)
   shell: /usr/bin/false
   when: ansible_os_family != "RedHat"
 
@@ -28,14 +28,8 @@
     state: latest
 
 - name: Update supervisor configure
-  shell: sed -i -r -e "s/^files[[:space:]]*=[[:space:]]*[A-Za-z0-9\.\/\*]+/files = \/{{activity_root_path}}\/conf\/supervisor\/conf.d\/*.conf/g" /etc/supervisord.conf
-  # 这个sed必须是gnu-sed
-
-- name: Enable and start supervisor
-  service:
-    name: "supervisord"
-    enabled: "yes"
-    state: "restarted"
+  shell: sed -i -r -e "s/^files[[:space:]]*=[[:space:]]*[A-Za-z0-9\.\/\*]+/files = \/{{activity_root_path}}\/conf\/supervisor\/conf.d\/*.conf/g; s/\;chown=nobody\:nogroup/chown={{ activity_user }}:root/g" /etc/supervisord.conf
+    # 这个sed必须是gnu-sed
 
 - name: Ensure user egg is not exist
   command: "id {{ activity_user }}"
@@ -74,3 +68,9 @@
     group: "root"
     mode: "0644"
   when: user_activity_exists is failed
+
+- name: Enable and start supervisor
+  service:
+    name: "supervisord"
+    enabled: "yes"
+    state: "restarted"
